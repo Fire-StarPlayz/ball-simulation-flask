@@ -1,0 +1,67 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ball Collision Simulation</title>
+  <style>
+    canvas { background: #eee; display: block; margin: 20px auto; border: 2px solid black; }
+    #startBtn { display: block; margin: 0 auto; padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <button id="startBtn">Start</button>
+  <canvas id="simCanvas" width="800" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // Ellipse foci approximation
+    const a = width / 2;
+    const b = height / 2;
+    const c = Math.sqrt(a*a - b*b);  // Distance from center to focus
+
+    const leftBall = { x: a - c, y: b, r: 20, color: 'red', vx: 2 };
+    const rightBall = { x: a + c, y: b, r: 20, color: 'blue', vx: 0 };
+
+    let animation;
+
+    function drawBall(ball) {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, 2 * Math.PI);
+      ctx.fillStyle = ball.color;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawScene() {
+      ctx.clearRect(0, 0, width, height);
+      drawBall(leftBall);
+      drawBall(rightBall);
+    }
+
+    function update() {
+      if (leftBall.x + leftBall.r >= rightBall.x - rightBall.r) {
+        cancelAnimationFrame(animation);
+        return;
+      }
+      leftBall.x += leftBall.vx;
+      drawScene();
+      animation = requestAnimationFrame(update);
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      leftBall.x = a - c;
+      rightBall.x = a + c;
+      drawScene();
+      animation = requestAnimationFrame(update);
+    });
+
+    drawScene();  // Initial draw
+  </script>
+</body>
+</html>
