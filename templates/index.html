@@ -6,12 +6,17 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #064d1f;
-      color: white;
+      font-family: sans-serif;
+      background-color: white;
+      color: black;
       display: flex;
       flex-direction: column;
       align-items: center;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: 24px;
     }
 
     #layout {
@@ -19,77 +24,67 @@
       grid-template-columns: 1fr 2fr 1fr;
       gap: 20px;
       max-width: 1200px;
-      margin-top: 20px;
+      width: 100%;
+      margin: 20px;
     }
 
     .panel {
-      background-color: #122;
-      border-radius: 12px;
-      padding: 15px;
-      border: 2px solid #444;
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 16px;
+      box-sizing: border-box;
     }
 
     canvas {
-      background: #087423;
-      border: 2px solid black;
+      background: #eee;
+      border: 1px solid #999;
       display: block;
       margin: 0 auto;
     }
 
-    #controls label, #controls button {
+    label, button, p {
       display: block;
-      margin: 8px 0;
+      margin: 10px 0;
+      font-size: 14px;
     }
 
-    #controls input {
+    input {
       width: 60px;
       padding: 5px;
-      font-size: 16px;
     }
 
     button {
-      padding: 10px;
-      font-size: 16px;
-      margin: 5px 0;
+      padding: 8px 12px;
+      border: 1px solid #333;
+      background-color: white;
       cursor: pointer;
-      background-color: #338;
-      border: none;
-      border-radius: 6px;
-      color: white;
     }
 
     button:hover {
-      background-color: #44a;
-    }
-
-    #velocityInfo, #collisionInfo {
-      margin-top: 15px;
-    }
-
-    #velocityInfo p, #collisionInfo {
-      margin: 10px 0;
+      background-color: #ddd;
     }
 
     #collisionInfo {
-      background-color: #300;
-      border: 2px solid red;
+      background-color: #fff;
+      border: 1px solid #999;
       padding: 10px;
-      font-weight: bold;
       display: none;
+      font-weight: bold;
     }
 
     h2 {
       margin-top: 0;
-      color: #c0f;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
 
-  <h1>🎯 2D Ball Collision Simulation</h1>
+  <h1>2D Ball Collision Simulation</h1>
 
   <div id="layout">
-    <!-- Left Column: Controls -->
+    <!-- Controls Panel -->
     <div class="panel" id="controls">
       <h2>Controls</h2>
       <label>Red Ball X: <input type="number" id="redX" value="200" /></label>
@@ -100,36 +95,182 @@
       <button id="resetBtn">Reset</button>
       <button id="frictionBtn">Friction: Off</button>
 
-      <div id="info">
+      <div>
         <h2>Instructions</h2>
-        <p>🔴 Red Ball: Velocity is user-defined</p>
-        <p>🔵 Blue Ball: Starts at rest</p>
-        <p>Click <strong>Start</strong> to run simulation.</p>
-        <p>Click <strong>Reset</strong> to reset.</p>
-        <p>Click <strong>Friction</strong> to toggle it.</p>
+        <p>Red Ball: user-defined velocity</p>
+        <p>Blue Ball: starts at rest</p>
+        <p>Use the buttons to control the simulation.</p>
       </div>
     </div>
 
-    <!-- Center: Canvas -->
+    <!-- Canvas Panel -->
     <div class="panel">
       <canvas id="simCanvas" width="800" height="400"></canvas>
     </div>
 
-    <!-- Right Column: Output Info -->
+    <!-- Info Panel -->
     <div class="panel">
       <h2>Status</h2>
-      <div id="velocityInfo">
-        <p>🔴 Red Ball Velocity: <span id="redVel">0.00</span></p>
-        <p>🔵 Blue Ball Velocity: <span id="blueVel">0.00</span></p>
-      </div>
-
+      <p>Red Ball Velocity: <span id="redVel">0.00</span></p>
+      <p>Blue Ball Velocity: <span id="blueVel">0.00</span></p>
       <div id="collisionInfo"></div>
     </div>
   </div>
 
-  <!-- JS remains unchanged -->
   <script>
-    // same script as before
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    let animation;
+    let frictionEnabled = false;
+    const friction = 0.99;
+
+    const defaultLeft = { vx: 5, vy: 0, r: 20, color: 'red' };
+    const rightBallInitial = { x: 600, y: 200, vx: 0, vy: 0, r: 20, color: 'blue' };
+
+    let leftBall = {};
+    let rightBall = { ...rightBallInitial };
+
+    const redVelText = document.getElementById('redVel');
+    const blueVelText = document.getElementById('blueVel');
+    const collisionBox = document.getElementById('collisionInfo');
+
+    function getUserInputValues() {
+      const x = parseFloat(document.getElementById('redX').value);
+      const y = parseFloat(document.getElementById('redY').value);
+      const vx = parseFloat(document.getElementById('redVx').value);
+      const vy = parseFloat(document.getElementById('redVy').value);
+      return { x, y, vx, vy };
+    }
+
+    function resetBalls() {
+      const { x, y, vx, vy } = getUserInputValues();
+      leftBall = { x, y, vx, vy, r: 20, color: 'red' };
+      rightBall = { ...rightBallInitial };
+      collisionBox.style.display = 'none';
+      drawScene(true);
+    }
+
+    function drawBall(ball) {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, 2 * Math.PI);
+      ctx.fillStyle = ball.color;
+      ctx.fill();
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.closePath();
+    }
+
+    function drawScene(fullClear = false) {
+      if (fullClear) {
+        ctx.clearRect(0, 0, width, height);
+      } else {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      drawBall(leftBall);
+      drawBall(rightBall);
+
+      updateVelocityDisplay();
+    }
+
+    function updateVelocityDisplay() {
+      const speedLeft = Math.sqrt(leftBall.vx ** 2 + leftBall.vy ** 2).toFixed(2);
+      const speedRight = Math.sqrt(rightBall.vx ** 2 + rightBall.vy ** 2).toFixed(2);
+      redVelText.textContent = speedLeft;
+      blueVelText.textContent = speedRight;
+    }
+
+    function distance(ball1, ball2) {
+      const dx = ball2.x - ball1.x;
+      const dy = ball2.y - ball1.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function resolveCollision(ball1, ball2) {
+      const dx = ball2.x - ball1.x;
+      const dy = ball2.y - ball1.y;
+      const angle = Math.atan2(dy, dx);
+
+      const speed1 = Math.sqrt(ball1.vx ** 2 + ball1.vy ** 2);
+      const speed2 = Math.sqrt(ball2.vx ** 2 + ball2.vy ** 2);
+
+      const direction1 = Math.atan2(ball1.vy, ball1.vx);
+      const direction2 = Math.atan2(ball2.vy, ball2.vx);
+
+      const vx1 = speed1 * Math.cos(direction1 - angle);
+      const vy1 = speed1 * Math.sin(direction1 - angle);
+      const vx2 = speed2 * Math.cos(direction2 - angle);
+      const vy2 = speed2 * Math.sin(direction2 - angle);
+
+      const finalVx1 = vx2;
+      const finalVx2 = vx1;
+
+      ball1.vx = Math.cos(angle) * finalVx1 + Math.cos(angle + Math.PI / 2) * vy1;
+      ball1.vy = Math.sin(angle) * finalVx1 + Math.sin(angle + Math.PI / 2) * vy1;
+      ball2.vx = Math.cos(angle) * finalVx2 + Math.cos(angle + Math.PI / 2) * vy2;
+      ball2.vy = Math.sin(angle) * finalVx2 + Math.sin(angle + Math.PI / 2) * vy2;
+
+      showCollisionInfo(speed1.toFixed(2), speed2.toFixed(2));
+    }
+
+    function showCollisionInfo(speed1, speed2) {
+      collisionBox.innerHTML = `
+        <strong>Collision Detected</strong><br>
+        Red Speed: ${speed1}<br>
+        Blue Speed: ${speed2}
+      `;
+      collisionBox.style.display = 'block';
+    }
+
+    function update() {
+      const dist = distance(leftBall, rightBall);
+      if (dist <= leftBall.r + rightBall.r) {
+        resolveCollision(leftBall, rightBall);
+      }
+
+      if (frictionEnabled) {
+        leftBall.vx *= friction;
+        leftBall.vy *= friction;
+        rightBall.vx *= friction;
+        rightBall.vy *= friction;
+      }
+
+      leftBall.x += leftBall.vx;
+      leftBall.y += leftBall.vy;
+      rightBall.x += rightBall.vx;
+      rightBall.y += rightBall.vy;
+
+      [leftBall, rightBall].forEach(ball => {
+        if (ball.x - ball.r < 0 || ball.x + ball.r > width) ball.vx *= -1;
+        if (ball.y - ball.r < 0 || ball.y + ball.r > height) ball.vy *= -1;
+      });
+
+      drawScene();
+      animation = requestAnimationFrame(update);
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      cancelAnimationFrame(animation);
+      resetBalls();
+      animation = requestAnimationFrame(update);
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      cancelAnimationFrame(animation);
+      resetBalls();
+    });
+
+    document.getElementById('frictionBtn').addEventListener('click', () => {
+      frictionEnabled = !frictionEnabled;
+      document.getElementById('frictionBtn').textContent = `Friction: ${frictionEnabled ? 'On' : 'Off'}`;
+    });
+
+    resetBalls(); // Initial draw
   </script>
 </body>
 </html>
