@@ -7,7 +7,7 @@
     body {
       margin: 0;
       font-family: sans-serif;
-      background-color: white;
+      background-color: green;
       color: black;
       display: flex;
       flex-direction: column;
@@ -97,7 +97,7 @@
 
       <div>
         <h2>Instructions</h2>
-        <p>Red Ball: user-defined velocity</p>
+        <p>Cue Ball: user-defined velocity</p>
         <p>Blue Ball: starts at rest</p>
         <p>Use the buttons to control the simulation.</p>
       </div>
@@ -111,7 +111,7 @@
     <!-- Info Panel -->
     <div class="panel">
       <h2>Status</h2>
-      <p>Red Ball Velocity: <span id="redVel">0.00</span></p>
+      <p>Cue Ball Velocity: <span id="redVel">0.00</span></p>
       <p>Blue Ball Velocity: <span id="blueVel">0.00</span></p>
       <div id="collisionInfo"></div>
     </div>
@@ -127,7 +127,7 @@
     let frictionEnabled = false;
     const friction = 0.99;
 
-    const defaultLeft = { vx: 5, vy: 0, r: 20, color: 'red' };
+    const defaultLeft = { vx: 5, vy: 0, r: 20, color: 'tan' };
     const rightBallInitial = { x: 600, y: 200, vx: 0, vy: 0, r: 20, color: 'blue' };
 
     let leftBall = {};
@@ -147,7 +147,7 @@
 
     function resetBalls() {
       const { x, y, vx, vy } = getUserInputValues();
-      leftBall = { x, y, vx, vy, r: 20, color: 'red' };
+      leftBall = { x, y, vx, vy, r: 20, color: 'tan' };
       rightBall = { ...rightBallInitial };
       collisionBox.style.display = 'none';
       drawScene(true);
